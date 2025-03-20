@@ -50,7 +50,7 @@ def fetch_protein_data(protein_id):
     else:
         return None
 
-def fromat_data_as_trxt(data):
+def fromat_data_as_text(data):
     """Format the JSON data into a plain text."""
     text_output = []
 
