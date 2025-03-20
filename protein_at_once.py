@@ -43,7 +43,7 @@ def fetch_protein_data(protein_id):
     url = f"https://data.rcsb.org/rest/v1/core/entry/{protein_id}"
     try:
         response = requests.get(url)
-        response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
+        response.raise_for_status()  
         return response.json()
     except requests.exceptions.RequestException as e:
         st.error(f"Error fetching data: {e}")
@@ -55,7 +55,7 @@ if st.button('Get Info'):
         with st.spinner(f"Fetching data for {protein_input}..."):
             data = fetch_protein_data(protein_input)
             if data:
-                st.json(data)  # Display raw JSON data
+                st.json(data)  
             else:
                 st.error('Protein not found or invalid PDB ID.')
     else:
