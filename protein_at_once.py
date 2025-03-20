@@ -57,23 +57,25 @@ def format_data_as_text(data):
     text_output.append(f"Protein ID: {data.get('id', 'N/A')}")
 
     # Handle 'struct' data
+    name = 'N/A'
     if 'struct' in data:
         if isinstance(data['struct'], list):
-            titles = [struct_info.get('title', 'N/A') for struct_info in data['struct']]
-            text_output.append(f"Name: {', '.join(titles)}")
-        elif isinstance(data['struct'], dict):
-            text_output.append(f"Name: {data['struct'].get('title', 'N/A')}")
-        else:
-            text_output.append(f"Name: N/A")
-    else:
-        text_output.append(f"Name: N/A")
+            # Try to find a title in the list of structs
+            for struct_info in data['struct']:
+                if isinstance(struct_info, dict) and 'title' in struct_info:
+                    name = struct_info['title']
+                    break  # Take the first title found
+        elif isinstance(data['struct'], dict) and 'title' in data['struct']:
+            # If 'struct' is a dict, try to get the title directly
+            name = data['struct']['title']
+    text_output.append(f"Name: {name}")
 
     # Handle 'rcsb_entry_info'
+    release_date = 'N/A'
     if 'rcsb_entry_info' in data:
-        rcsb_data = data['rcsb_entry_info']
-        text_output.append(f"Release Date: {rcsb_data.get('initial_release_date', 'N/A')}")
-    else:
-        text_output.append(f"Release Date: N/A")
+        release_date = data['rcsb_entry_info'].get('initial_release_date', 'N/A')
+    text_output.append(f"Release Date: {release_date}")
+
 
     # Handle organism data
     organisms = []
@@ -83,7 +85,10 @@ def format_data_as_text(data):
                 if isinstance(entity, dict) and 'rcsb_source_organism' in entity:
                     for org in entity.get('rcsb_source_organism', []):
                         if isinstance(org, dict):
-                            organisms.append(org.get('ncbi_scientific_name', 'N/A'))
+                            organism_name = org.get('ncbi_scientific_name')
+                            if organism_name:
+                                organisms.append(organism_name)
+
 
     text_output.append(f"Organism: {', '.join(organisms) if organisms else 'N/A'}")
 
@@ -95,6 +100,10 @@ if st.button('Get Info'):
         with st.spinner(f"Fetching data for {protein_input}..."):
             data = fetch_protein_data(protein_input)
             if data:
+                # Debugging: Print raw JSON data
+                st.write("Raw Data:")
+                st.json(data)
+
                 formatted_text = format_data_as_text(data)
                 st.text_area("Protein Information", value=formatted_text, height=300)
 
