@@ -1,6 +1,5 @@
 import streamlit as st
 import requests
-import json  
 
 st.set_page_config(
     page_title="Explore Protein Like No Where",
@@ -50,70 +49,16 @@ def fetch_protein_data(protein_id):
         st.error(f"Error fetching data: {e}")
         return None
 
-def format_data_as_text(data):
-    """Format the JSON data into a plain text."""
-    text_output = []
-
-    text_output.append(f"Protein ID: {data.get('id', 'N/A')}")
-
-    # Handle 'struct' data
-    name = 'N/A'
-    if 'struct' in data:
-        if isinstance(data['struct'], list):
-            # Try to find a title in the list of structs
-            for struct_info in data['struct']:
-                if isinstance(struct_info, dict) and 'title' in struct_info:
-                    name = struct_info['title']
-                    break  # Take the first title found
-        elif isinstance(data['struct'], dict) and 'title' in data['struct']:
-            # If 'struct' is a dict, try to get the title directly
-            name = data['struct']['title']
-    text_output.append(f"Name: {name}")
-
-    # Handle 'rcsb_entry_info'
-    release_date = 'N/A'
-    if 'rcsb_entry_info' in data:
-        release_date = data['rcsb_entry_info'].get('initial_release_date', 'N/A')
-    text_output.append(f"Release Date: {release_date}")
-
-
-    # Handle organism data
-    organisms = []
-    if 'rcsb_entity_source_organism' in data:
-        if isinstance(data['rcsb_entity_source_organism'], list):
-            for entity in data['rcsb_entity_source_organism']:
-                if isinstance(entity, dict) and 'rcsb_source_organism' in entity:
-                    for org in entity.get('rcsb_source_organism', []):
-                        if isinstance(org, dict):
-                            organism_name = org.get('ncbi_scientific_name')
-                            if organism_name:
-                                organisms.append(organism_name)
-
-
-    text_output.append(f"Organism: {', '.join(organisms) if organisms else 'N/A'}")
-
-    return "\n".join(text_output)
-
 
 if st.button('Get Info'):
     if protein_input:
         with st.spinner(f"Fetching data for {protein_input}..."):
             data = fetch_protein_data(protein_input)
             if data:
-                # Debugging: Print raw JSON data
-                st.write("Raw Data:")
-                st.json(data)
-
-                formatted_text = format_data_as_text(data)
-                st.text_area("Protein Information", value=formatted_text, height=300)
-
-                st.download_button(
-                    label="Download Data",
-                    data=formatted_text,
-                    file_name=f"{protein_input}_data.txt",
-                    mime="text/plain"
-                )
+                st.json(data)  # Display raw JSON data
             else:
                 st.error('Protein not found or invalid PDB ID.')
     else:
         st.warning('Please enter a protein name or PDB ID.')
+
+               
