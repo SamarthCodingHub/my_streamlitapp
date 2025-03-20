@@ -62,7 +62,7 @@ if 'rcsb' in data:
         text_output.append(f"Release Date: {rcsb_data.get('release_date', 'N/A')}")
         text_output.append(f"Organism: {rcsb_data.get('organism', 'N/A')}")
     
-    return "\n".join(text_output)
+return "\n".join(text_output)
 
 if st.button('Get Info'):
     if protein_input:
