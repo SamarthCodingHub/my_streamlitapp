@@ -26,7 +26,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-
 with st.sidebar:
     st.image(
         "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/RCSB_PDB_logo.svg/2560px-RCSB_PDB_logo.svg.png",
@@ -49,16 +48,25 @@ def fetch_protein_data(protein_id):
         st.error(f"Error fetching data: {e}")
         return None
 
-
 if st.button('Get Info'):
     if protein_input:
         with st.spinner(f"Fetching data for {protein_input}..."):
             data = fetch_protein_data(protein_input)
             if data:
                 st.json(data)  
+                
+                
+                st.markdown(f"""
+                    <iframe src="https://icn3d.ncibi.org/?pdb={protein_input}" 
+                            width="100%" height="600" frameborder="0">
+                    </iframe>
+                """, unsafe_allow_html=True)
+                
             else:
                 st.error('Protein not found or invalid PDB ID.')
     else:
         st.warning('Please enter a protein name or PDB ID.')
+
+       
 
                
