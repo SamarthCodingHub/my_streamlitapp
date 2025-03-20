@@ -34,7 +34,7 @@ with st.sidebar:
         width=200,
     )  # Replace with a direct link to a smaller image
     st.title("Protein Data Explorer")
-    st.markdown("Explore protein data from RCSB PDB.")
+    st.markdown("Explore protein data from Database.")
 
 
 
