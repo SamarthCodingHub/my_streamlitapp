@@ -50,15 +50,37 @@ def fetch_protein_data(protein_id):
     else:
         return None
 
+def fromat_data_as_trxt(data):
+    """Format the JSON data into a plain text."""
+    text_output = []
+
+text_output.append(f"Protein ID: {data.get('id', 'N/A')}")
+text_output.append(f"Name: {data.get('name', 'N/A')}")
+
+if 'rcsb' in data:
+        rcsb_data = data['rcsb']
+        text_output.append(f"Release Date: {rcsb_data.get('release_date', 'N/A')}")
+        text_output.append(f"Organism: {rcsb_data.get('organism', 'N/A')}")
+    
+    return "\n".join(text_output)
 
 if st.button('Get Info'):
     if protein_input:
         data = fetch_protein_data(protein_input)
         if data:
-            st.json(data)  # Display JSON data in a readable format
+            
+            formatted_text = format_data_as_text(data)
+            st.text_area("Protein Information", value=formatted_text, height=300)
+
+            st.download_button(
+                label="Download Data",
+                data=formatted_text,
+                file_name=f"{protein_input}_data.txt",
+                mime="text/plain"
+            )
         else:
             st.error('Protein not found or invalid PDB ID.')
     else:
         st.warning('Please enter a protein name or PDB ID.')
-
+            
 
