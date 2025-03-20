@@ -57,12 +57,15 @@ def fromat_data_as_trxt(data):
 text_output.append(f"Protein ID: {data.get('id', 'N/A')}")
 text_output.append(f"Name: {data.get('name', 'N/A')}")
 
-if 'rcsb' in data:
+def process_data(data):
+    text_output = []
+    if 'rcsb' in data:
         rcsb_data = data['rcsb']
         text_output.append(f"Release Date: {rcsb_data.get('release_date', 'N/A')}")
         text_output.append(f"Organism: {rcsb_data.get('organism', 'N/A')}")
     
-return "\n".join(text_output)
+    return "\n".join(text_output)
+
 
 if st.button('Get Info'):
     if protein_input:
