@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
-import nglview as nv
+from Bio.PDB import PDBParser
+import matplotlib.pyplot as plt
 from io import StringIO
 
 st.set_page_config(
@@ -51,19 +52,48 @@ def fetch_protein_data(protein_id):
         st.error(f"Error fetching data: {e}")
         return None
 
+def plot_protein_structure(pdb_data):
+    """Plot the protein structure using BioPython and Matplotlib."""
+    parser = PDBParser()
+    structure = parser.get_structure("Protein", StringIO(pdb_data))
+    
+    # Generate a simple plot of the protein backbone
+    x, y, z = [], [], []
+    
+    for model in structure:
+        for chain in model:
+            for residue in chain:
+                if residue.has_id('CA'):  # Only take alpha carbon atoms
+                    x.append(residue['CA'].get_coord()[0])
+                    y.append(residue['CA'].get_coord()[1])
+                    z.append(residue['CA'].get_coord()[2])
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(x, y, z, marker='o', linestyle='-', color='b')
+    
+    ax.set_xlabel('X Coordinate')
+    ax.set_ylabel('Y Coordinate')
+    ax.set_zlabel('Z Coordinate')
+    
+    plt.title('Protein Backbone Structure')
+    
+    # Save plot to a BytesIO object
+    img = StringIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+    
+    return img
+
 if st.button('Get Info'):
     if protein_input:
         with st.spinner(f"Fetching data for {protein_input}..."):
             pdb_data = fetch_protein_data(protein_input)
             if pdb_data:
-                # Display NGLView for the protein structure
+                # Display protein structure plot using BioPython and Matplotlib
                 st.markdown("### Protein Structure Visualization")
-                
-                # Create a NGLView widget to visualize the structure
-                view = nv.show_text(StringIO(pdb_data), "pdb")
-                view.add_representation('cartoon', selection='protein', color='blue')  # Add cartoon representation
-                view.add_representation('line', selection='water')  # Add line representation for water
-                st.write(view)  # Display the NGLView widget
+                img = plot_protein_structure(pdb_data)
+                st.image(img, caption='2D Projection of Protein Backbone', use_column_width=True)
                 
                 # Optionally display raw PDB data if needed
                 with st.expander("View Raw PDB Data"):
