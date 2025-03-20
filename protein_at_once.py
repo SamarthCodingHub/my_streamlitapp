@@ -3,6 +3,7 @@ import requests
 from Bio.PDB import PDBParser
 import matplotlib.pyplot as plt
 from io import StringIO
+import nglview as nv
 
 st.set_page_config(
     page_title="Explore Protein Like No Where",
