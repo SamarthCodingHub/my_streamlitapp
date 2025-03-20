@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+import json  
 
 st.set_page_config(
     page_title="Explore Protein Like No Where",
@@ -50,14 +51,29 @@ def format_data_as_text(data):
     """Format the JSON data into a plain text."""
     text_output = []
     
-    # Append protein information to text_output
+    
     text_output.append(f"Protein ID: {data.get('id', 'N/A')}")
-    text_output.append(f"Name: {data.get('name', 'N/A')}")
+    
+   
+    if 'struct' in data:
+        titles = [struct_info.get('title', 'N/A') for struct_info in data['struct']]
+        text_output.append(f"Name: {', '.join(titles)}") 
+    else:
+        text_output.append(f"Name: N/A")
+    
 
-    if 'rcsb' in data:
-        rcsb_data = data['rcsb']
-        text_output.append(f"Release Date: {rcsb_data.get('release_date', 'N/A')}")
-        text_output.append(f"Organism: {rcsb_data.get('organism', 'N/A')}")
+    if 'rcsb_entry_info' in data:
+        rcsb_data = data['rcsb_entry_info']
+        text_output.append(f"Release Date: {rcsb_data.get('initial_release_date', 'N/A')}")
+        
+    
+    if 'rcsb_entity_source_organism' in data:
+        organisms = []
+        for entity in data['rcsb_entity_source_organism']:
+            for org in entity.get('rcsb_source_organism', []):
+                organisms.append(org.get('ncbi_scientific_name', 'N/A'))
+        text_output.append(f"Organism: {', '.join(organisms)}")
+
 
     return "\n".join(text_output)
 
@@ -78,6 +94,7 @@ if st.button('Get Info'):
             st.error('Protein not found or invalid PDB ID.')
     else:
         st.warning('Please enter a protein name or PDB ID.')
+
 
        
 
