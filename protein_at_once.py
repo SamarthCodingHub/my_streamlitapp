@@ -3,7 +3,8 @@ import requests
 import pandas as pd
 
 st.set_page_config(
-        page_title="explore protein like no where"
+        st.set_page_config(page_title="explore protein like no where")
+
         page_icon=":dna:",
         layout="wide"
         initial_sidebar_state="expanded",
