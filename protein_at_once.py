@@ -54,10 +54,10 @@ def format_data_as_text(data):
     
     text_output.append(f"Protein ID: {data.get('id', 'N/A')}")
     
-   
-    if 'struct' in data:
+    
+    if 'struct' in data and isinstance(data['struct'], list):
         titles = [struct_info.get('title', 'N/A') for struct_info in data['struct']]
-        text_output.append(f"Name: {', '.join(titles)}") 
+        text_output.append(f"Name: {', '.join(titles)}")  
     else:
         text_output.append(f"Name: N/A")
     
@@ -67,12 +67,16 @@ def format_data_as_text(data):
         text_output.append(f"Release Date: {rcsb_data.get('initial_release_date', 'N/A')}")
         
     
-    if 'rcsb_entity_source_organism' in data:
+    if 'rcsb_entity_source_organism' in data and isinstance(data['rcsb_entity_source_organism'], list):
         organisms = []
         for entity in data['rcsb_entity_source_organism']:
-            for org in entity.get('rcsb_source_organism', []):
-                organisms.append(org.get('ncbi_scientific_name', 'N/A'))
+            if isinstance(entity, dict) and 'rcsb_source_organism' in entity:
+                for org in entity.get('rcsb_source_organism', []):
+                    if isinstance(org, dict):
+                        organisms.append(org.get('ncbi_scientific_name', 'N/A'))
         text_output.append(f"Organism: {', '.join(organisms)}")
+    else:
+        text_output.append("Organism: N/A")
 
 
     return "\n".join(text_output)
@@ -94,6 +98,8 @@ if st.button('Get Info'):
             st.error('Protein not found or invalid PDB ID.')
     else:
         st.warning('Please enter a protein name or PDB ID.')
+
+
 
 
        
