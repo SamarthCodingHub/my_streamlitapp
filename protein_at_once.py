@@ -55,7 +55,7 @@ def parse_pdb_coordinates(pdb_data):
     """Parse atomic coordinates from PDB data."""
     x, y, z = [], [], []
     for line in pdb_data.splitlines():
-        if line.startswith("ATOM") and line[13:15] == "CA":  # Extract alpha carbon atoms (CA)
+        if line.startswith("ATOM") and line[13:15] == "CA":  
             try:
                 x.append(float(line[30:38].strip()))
                 y.append(float(line[38:46].strip()))
@@ -87,7 +87,7 @@ if st.button('Visualize Protein'):
                 if x and y and z:
                     st.markdown("### Protein Structure Visualization")
                     fig = plot_protein_structure(x, y, z)
-                    st.pyplot(fig)  # Display the plot
+                    st.pyplot(fig)  
                     
                     with st.expander("View Raw PDB Data"):
                         st.text(pdb_data)
