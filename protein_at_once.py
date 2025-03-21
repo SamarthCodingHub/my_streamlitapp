@@ -69,10 +69,10 @@ if st.button('Visualize Protein', key='visualize_button'):
                 
                 # Create py3Dmol viewer
                 view = py3Dmol.view(width=800, height=400)
-                view.addModel(pdb_data, "pdb")  # Load PDB data into the viewer
-                view.setStyle({'cartoon': {'color': 'spectrum'}})  # Style the protein as cartoon with spectrum coloring
-                view.setBackgroundColor('white')  # Set background color to white
-                view.zoomTo()  # Zoom to fit the structure
+                view.addModel(pdb_data, "pdb")  # it will load the protein
+                view.setStyle({'cartoon': {'color': 'spectrum'}})  # cartoon and rainbow colour
+                view.setBackgroundColor('white')  # bg white
+                view.zoomTo()  # we can zoom
                 
                 # Render the viewer in Streamlit using stmol.showmol()
                 stmol.showmol(view, height=500, width=800)
