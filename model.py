@@ -6,12 +6,14 @@ from Bio.PDB import PDBParser
 from io import StringIO
 import plotly.express as px
 import plotly.graph_objects as go
-import joblib
 import numpy as np
 import MDAnalysis as mda
 from MDAnalysis.analysis.hydrogenbonds.hbond_analysis import HydrogenBondAnalysis
 from ramachandraw.parser import get_phi_psi
 from ramachandraw.utils import fetch_pdb, plot
+import shutil
+import subprocess
+import os
 
 # ----------------------
 # App Configuration
@@ -95,10 +97,19 @@ def analyze_hydrogen_bonds(pdb_data):
     
     return hbonds.count_by_time()
 
-def predict_binding_affinity(features):
-    """Predict binding affinity based on input features."""
-    model = joblib.load("model.pkl")  # Load your pre-trained model here
-    return model.predict(np.array(features).reshape(1, -1))
+def predict_active_sites(pdb_data):
+    parser = PDBParser()
+    structure = parser.get_structure("temp", StringIO(pdb_data))
+    catalytic_residues = ['HIS', 'ASP', 'GLU', 'SER', 'CYS', 'LYS', 'TYR', 'ARG']
+    active_sites = []
+    for residue in structure.get_residues():
+        if residue.id[0] == ' ' and residue.get_resname() in catalytic_residues:
+            active_sites.append({
+                'resname': residue.get_resname(),
+                'chain': residue.parent.id,
+                'resnum': residue.id[1]
+            })
+    return active_sites
 
 def visualize_ligand_counts(ligands):
     """Create a bar chart of ligand counts."""
@@ -138,17 +149,55 @@ def create_3d_view(pdb_data, style='cartoon', highlight_ligands=True):
 def generate_ramachandran_plot(pdb_id):
     """Generate and display the Ramachandran plot for a given PDB ID."""
     pdb_data = fetch_pdb_data(pdb_id)
-    
     if pdb_data is not None:
-        # Fetch phi/psi angles and plot them using ramachandraw's plot function
         ax = plot(fetch_pdb(pdb_id))  # Returns an Axes object
-        
-        # Extract the Figure object from the Axes object
         fig = ax.figure
-        
-        return fig  # Return the Figure object
-    
+        return fig
     return None
+
+# ----------------------
+# Docking UI Function
+# ----------------------
+def docking_ui(pdb_data):
+    st.subheader("Ligand Docking (AutoDock Vina)")
+    if shutil.which("vina") is None:
+        st.error("AutoDock Vina is not installed or not in PATH. Please install and add to PATH.")
+        return
+
+    ligand_file = st.file_uploader("Upload ligand (PDBQT)", type=["pdbqt"])
+    st.markdown("#### Docking Box Parameters")
+    center_x = st.number_input("Center X", value=0.0, format="%.2f")
+    center_y = st.number_input("Center Y", value=0.0, format="%.2f")
+    center_z = st.number_input("Center Z", value=0.0, format="%.2f")
+    size_x = st.number_input("Size X (Å)", value=20.0, min_value=5.0, max_value=60.0, format="%.2f")
+    size_y = st.number_input("Size Y (Å)", value=20.0, min_value=5.0, max_value=60.0, format="%.2f")
+    size_z = st.number_input("Size Z (Å)", value=20.0, min_value=5.0, max_value=60.0, format="%.2f")
+
+    if ligand_file and pdb_data and st.button("Run Docking"):
+        with open("protein.pdb", "w") as f:
+            f.write(pdb_data)
+        os.system("obabel protein.pdb -O protein.pdbqt")
+        with open("ligand.pdbqt", "wb") as f:
+            f.write(ligand_file.read())
+        vina_cmd = [
+            "vina",
+            "--receptor", "protein.pdbqt",
+            "--ligand", "ligand.pdbqt",
+            "--center_x", str(center_x),
+            "--center_y", str(center_y),
+            "--center_z", str(center_z),
+            "--size_x", str(size_x),
+            "--size_y", str(size_y),
+            "--size_z", str(size_z),
+            "--out", "docked.pdbqt"
+        ]
+        st.write("Running docking...")
+        result = subprocess.run(vina_cmd, capture_output=True, text=True)
+        st.text(result.stdout)
+        if os.path.exists("docked.pdbqt"):
+            docked = open("docked.pdbqt").read()
+            stmol.showmol(create_3d_view(docked, style='sphere'), height=400)
+            st.success("Docking complete! Showing docked pose.")
 
 # ----------------------
 # UI Components
@@ -156,8 +205,8 @@ def generate_ramachandran_plot(pdb_id):
 def sidebar_controls():
     """Render sidebar controls with tooltips"""
     with st.sidebar:
-        st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/RCSB_PDB_logo.svg/2560px-RCSB_PDB_logo.svg.png", 
-                width=200)
+        st.image("https://media.istockphoto.com/id/1390037416/photo/chain-of-amino-acid-or-bio-molecules-called-protein-3d-illustration.jpg?s=612x612&w=0&k=20&c=xSkGolb7TDjqibvINrQYJ_rqrh4RIIzKIj3iMj4bZqI=", 
+                width=400)
         st.title("Protein Molecule Mosaic")
         
         analysis_type = st.radio(
@@ -194,8 +243,7 @@ def main():
     with col1:
         st.header("Protein Palette")
         
-        pdb_id = st.text_input("Enter PDB ID:", value="3IAR").upper()
-        
+        pdb_id = st.text_input("Enter PDB ID:").upper()
         pdb_data = fetch_pdb_data(pdb_id) if pdb_id else None
         
         if pdb_data:
@@ -205,16 +253,18 @@ def main():
                 highlight_ligands=controls['show_ligands']
             )
             stmol.showmol(view, height=600, width=800)
-                
+            
             # Generate and display Ramachandran plot
             with st.expander("Ramachandran Plot"):
                 ramachandran_fig = generate_ramachandran_plot(pdb_id)
                 if ramachandran_fig is not None:
-                    st.pyplot(ramachandran_fig)  # Display the plot
-                
+                    st.pyplot(ramachandran_fig)
                 else:
                     st.warning("Unable to generate Ramachandran plot. Please check the PDB ID.")
-                
+
+            # Docking feature below Ramachandran plot
+            with st.expander("Ligand Docking (AutoDock Vina)"):
+                docking_ui(pdb_data)
         else:
             st.warning("Please provide a valid PDB ID to visualize the protein structure.")
                 
@@ -243,18 +293,17 @@ def main():
             
             with st.expander("Hydrogen Bond Analysis"):
                 hbond_counts = analyze_hydrogen_bonds(pdb_data)
-                total_hbonds = np.sum(hbond_counts)  # Corrected summation of NumPy array elements
+                total_hbonds = np.sum(hbond_counts)
                 st.write(f"Total Hydrogen Bonds: {total_hbonds}")
                 if total_hbonds > 0:
                     st.write(f"Counts per Frame: {hbond_counts}")
             
-            with st.expander("Binding Affinity Prediction"):
-                features_input = st.text_input("Enter Features (comma-separated):", "0.5, 1.2, 0.3")
-                if st.button("Predict Binding Affinity"):
-                    feature_list = [float(x) for x in features_input.split(",")]
-                    affinity = predict_binding_affinity(feature_list)
-                    if affinity is not None:
-                        st.write(f"Predicted Binding Affinity: {affinity[0]}")
+            with st.expander("Active Site Prediction"):
+                active_sites = predict_active_sites(pdb_data)
+                st.write(f"**Predicted Active Sites ({len(active_sites)} residues):**")
+                for site in active_sites:
+                    st.write(f"{site['resname']} Chain {site['chain']} Residue {site['resnum']}")
+                st.info("Active sites are predicted based on common catalytic residues (HIS, ASP, GLU, SER, CYS, LYS, TYR, ARG).")
             
             with st.expander("Ligand Type Visualization"):
                 fig = visualize_ligand_counts(ligands)
